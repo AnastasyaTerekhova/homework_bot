@@ -122,19 +122,19 @@ def main():
                 verdict = parse_status(last_homework)
                 send_message(bot, verdict)
                 last_status = cur_status
-            bot.polling(RETRY_PERIOD)
-            time.sleep(RETRY_PERIOD)
+            bot.polling()
         except apihelper.ApiException:
             logger.error('Произошла ошибка при отправке сообщения в Telegram')
-            time.sleep(RETRY_PERIOD)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             try:
                 bot.send_message(TELEGRAM_CHAT_ID, message)
-                time.sleep(RETRY_PERIOD)
             except apihelper.ApiException:
                 logger.error('Произошла ошибка при отправке сообщения')
+            finally:
                 time.sleep(RETRY_PERIOD)
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
