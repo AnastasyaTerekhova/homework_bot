@@ -44,30 +44,25 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """Проверяет доступность переменных окружения."""
-    if PRACTICUM_TOKEN is None:
-        logging.critical('отсутствует токен PRACTICUM_TOKEN')
-        return False
-    elif TELEGRAM_TOKEN is None:
-        logging.critical('отсутствует токен TELEGRAM_TOKEN')
-        return False
-    elif TELEGRAM_CHAT_ID is None:
-        logging.critical('отсутствует токен TELEGRAM_CHAT_ID')
-        return False
-    else:
+    if all([PRACTICUM_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN]):
         return True
+    else:
+        logging.critical('отсутствует токен')
+        return False
 
 
 def send_message(bot, message):
-    """отправляет сообщение в Telegram-чат."""
-    bot.send_message(
-        TELEGRAM_CHAT_ID,
-        message,
-    )
-    logging.debug(msg='сообщение отправлено')
+    """Отправляет сообщение в Telegram-чат."""
+    try:
+        logging.debug(msg='начали отправку сообщения')
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+        logging.debug(msg='сообщение отправлено')
+    except apihelper.ApiException:
+        logger.error('Произошла ошибка при отправке сообщения')
 
 
 def get_api_answer(timestamp):
-    """делает запрос к эндпоинту API-сервиса."""
+    """Делает запрос к эндпоинту API-сервиса."""
     response = None
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=timestamp)
@@ -79,11 +74,12 @@ def get_api_answer(timestamp):
 
 
 def check_response(response):
-    """проверяет ответ API на соответствие документации."""
+    """Проверяет ответ API на соответствие документации."""
     if 'homeworks' not in response or 'current_date' not in response:
-        raise TypeError
+        raise TypeError('В ответе API нет нужных ключей')
     if not isinstance(response.get('homeworks'), list):
-        raise TypeError
+        raise TypeError('Значение ключа homeworks не'
+                        'соответствует документации')
     if len(response.get('homeworks')) == 0:
         logging.debug('в ответе API получен пустой список домашних работ')
     return True
@@ -93,7 +89,7 @@ def parse_status(homework):
     """Извлекает из информации о домашней работе статус этой работы."""
     if 'homework_name' not in homework.keys():
         raise NoKeyException
-    if homework['status'] not in HOMEWORK_VERDICTS.keys():
+    if homework['status'] not in HOMEWORK_VERDICTS:
         raise UnknownStatusException
     homework_name = homework['homework_name']
     status = homework['status']
